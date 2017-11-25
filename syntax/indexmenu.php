@@ -67,6 +67,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
         $gen_id   = 'random';
         $maxjs    = 0;
         $max      = 0;
+        $title    = -1;
         $jsajax   = '';
         $nss      = array();
         $skipns   = array();
@@ -120,6 +121,8 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
         $notoc = $this->hasOption($defaults, $opts, 'notoc');
         //disable the right context menu
         $nomenu = $this->hasOption($defaults, $opts, 'nomenu');
+        //show links as first title of the page
+        $title = $this->hasOption($defaults, $opts, 'title');
         //Main sort method
         $tsort = $this->hasOption($defaults, $opts, 'tsort');
         $dsort = $this->hasOption($defaults, $opts, 'dsort');
@@ -252,6 +255,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
                 'nopg'          => $nopg,
                 'nss'           => $nss,
                 'max'           => $max,
+                'title_as_name' => $title,
                 'js'            => $js,
                 'skip_index'    => $skipns,
                 'skip_file'     => $skipfile,
@@ -408,7 +412,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
         $output_tmp = "";
         if($opts['js']) {
             $ns         = str_replace('/', ':', $ns);
-            $output_tmp = $this->_jstree($data, $ns, $js_opts, $js_name, $opts['max']);
+            $output_tmp = $this->_jstree($data, $ns, $js_opts, $js_name, $opts['max'], $opts['title_as_name']);
 
             //remove unwanted nodes from standard index
             $this->_clean_data($data);
@@ -438,7 +442,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
      * @param int    $max     the node at $max level will retrieve all its child nodes through the AJAX mechanism
      * @return bool|string returns inline javascript or false
      */
-    private function _jstree($data, $ns, $js_opts, $js_name, $max) {
+    private function _jstree($data, $ns, $js_opts, $js_name, $max, $title_as_name) {
         global $conf;
         $hns = false;
         if(empty($data)) return false;
@@ -447,7 +451,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
         $headpage = $this->getConf('headpage');
         //if rootnamespace and headpage, then add startpage as headpage - TODO seems not logic, when desired use $conf[headpage]=:start: ??
         if(empty($ns) && !empty($headpage)) $headpage .= ','.$conf['start'];
-        $title = $this->_getTitle($ns, $headpage, $hns);
+        $title = $this->_getTitle($ns, $headpage, $hns, $title_as_name);
         if(empty($title)) {
             if(empty($ns)){
                 $title = htmlspecialchars($conf['title'], ENT_QUOTES);
@@ -564,7 +568,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
      * @param string $hns reference pageid of headpage, false when not existing
      * @return string when headpage & heading on: title of headpage, otherwise: namespace name
      */
-    private function _getTitle($ns, $headpage, &$hns) {
+    private function _getTitle($ns, $headpage, &$hns, $title_as_name) {
         global $conf;
         $hns   = false;
         $title = noNS($ns);
@@ -588,7 +592,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
             }
             //check headpage
             if(@file_exists(wikiFN($page)) && auth_quickaclcheck($page) >= AUTH_READ) {
-                if($conf['useheading'] == 1 || $conf['useheading'] === 'navigation') {
+                if($conf['useheading'] == 1 || $conf['useheading'] === 'navigation' || $title_as_name) {
                     $title_tmp = p_get_first_heading($page, FALSE);
                     if(!is_null($title_tmp)) $title = $title_tmp;
                 }
@@ -715,7 +719,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
                 $return = $isopen;
             }
             //Set title and headpage
-            $title = $this->_getTitle($id, $headpage, $hns);
+            $title = $this->_getTitle($id, $headpage, $hns, $opts['title_as_name']);
             //link namespace nodes to start pages when excluding page nodes
             if(!$hns && $opts['nopg']) $hns = $id.":".$conf['start'];
         } else {
@@ -757,7 +761,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
             }
 
             //Set title
-            if($conf['useheading'] == 1 || $conf['useheading'] === 'navigation') {
+            if($conf['useheading'] == 1 || $conf['useheading'] === 'navigation' || $opts['title_as_name']) {
                 $title = p_get_first_heading($id, FALSE);
             }
             if(is_null($title)) $title = noNS($id);
