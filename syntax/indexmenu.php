@@ -67,7 +67,7 @@ class syntax_plugin_indexmenu_indexmenu extends DokuWiki_Syntax_Plugin {
         $gen_id   = 'random';
         $maxjs    = 0;
         $max      = 0;
-        $title    = -1;
+        $title    = 0;
         $jsajax   = '';
         $nss      = array();
         $skipns   = array();
